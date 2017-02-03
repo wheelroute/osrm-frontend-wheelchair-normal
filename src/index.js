@@ -22,13 +22,13 @@ var itineraryBuilder = require('./itinerary_builder')(mergedOptions.language);
 
 var mapLayer = leafletOptions.layer;
 var overlay = leafletOptions.overlay;
-var baselayer = ls.get('layer') ? mapLayer[0][ls.get('layer')] : mapLayer[0]['Mapbox Streets'];
+var baselayer = ls.get('layer') ? mapLayer[0][ls.get('layer')] : mapLayer[0]['openstreetmap.org'];
 var layers = ls.get('getOverlay') && [baselayer, overlay['Small Components']] || baselayer;
 var map = L.map('map', {
   zoomControl: true,
   dragging: true,
   layers: layers,
-  maxZoom: 18
+  maxZoom: 19
 }).setView(mergedOptions.center, mergedOptions.zoom);
 
 // Pass basemap layers
@@ -222,3 +222,56 @@ L.control.locate({
   showPopup: false,
   locateOptions: {}
 }).addTo(map);
+
+/* see http://jsfiddle.net/FranceImage/1yaqtx9u/ / https://github.com/turban/Leaflet.Mask/blob/master/L.Mask.js */
+L.Mask = L.Polygon.extend({
+  options: {
+    stroke: false,
+    color: '#333',
+    fillOpacity: 0.3,
+    clickable: true,
+
+    outerBounds: new L.LatLngBounds([-90, -360], [90, 360])
+  },
+
+  initialize: function (latLngs, options) {
+
+         var outerBoundsLatLngs = [
+      this.options.outerBounds.getSouthWest(),
+      this.options.outerBounds.getNorthWest(),
+      this.options.outerBounds.getNorthEast(),
+      this.options.outerBounds.getSouthEast()
+    ];
+        L.Polygon.prototype.initialize.call(this, [outerBoundsLatLngs, latLngs], options);
+  },
+
+});
+L.mask = function (latLngs, options) {
+  return new L.Mask(latLngs, options);
+};
+
+var geoJSONdata = {"type":"FeatureCollection","generator":"JOSM","features":[{"type":"Feature","properties":{"name":"erhebungsgebiete-graz"},"geometry":{"type":"LineString","coordinates":[[15.446276,47.080905],[15.448185,47.079204],[15.450828,47.076295],[15.452189,47.07607],[15.454463,47.073317],[15.452884,47.072338],[15.452104,47.069576],[15.453154,47.06891],[15.451882,47.067877],[15.454464,47.066818],[15.453959,47.065973],[15.458708,47.061915],[15.46177,47.061018],[15.460647,47.059708],[15.452804,47.056996],[15.44726995634,47.05537021279],[15.44626144576,47.05753376974],[15.44482378172,47.06014307806],[15.44251976418,47.06407324474],[15.44039009022,47.06423402642],[15.43486742186,47.0639435228],[15.435059,47.065204],[15.435325,47.070943],[15.433993,47.076265],[15.434349,47.077841],[15.436569,47.079225],[15.44238,47.079919],[15.446276,47.080905]]}}]}
+
+var coordinates = geoJSONdata.features[0].geometry.coordinates;
+var latLngs = [];
+for (var i=0; i<coordinates.length; i++) {
+    latLngs.push(new L.LatLng(coordinates[i][1], coordinates[i][0]));
+}
+
+L.mask(latLngs).addTo(map);
+
+function updateMapSwitcherLinks() {
+  var newParms = window.location.href.split('?')[1];
+  var childs = document.getElementsByName("osrmlink");
+  for ( var i=0; i < childs.length; i++) {
+    var a_element = childs[i];
+    var href = a_element.getAttribute("href");
+    var splitstr = href.split('?');
+    href = splitstr[0] + "?" + newParms;
+    a_element.setAttribute("href",href);
+  }
+}
+map.on("zoomlevelschange", updateMapSwitcherLinks);
+map.on("zoomend", updateMapSwitcherLinks);
+map.on("moveend", updateMapSwitcherLinks);
+map.on("load", updateMapSwitcherLinks);
