@@ -275,3 +275,6 @@ map.on("zoomlevelschange", updateMapSwitcherLinks);
 map.on("zoomend", updateMapSwitcherLinks);
 map.on("moveend", updateMapSwitcherLinks);
 map.on("load", updateMapSwitcherLinks);
+map.on("click", updateMapSwitcherLinks);
+
+setTimeout(updateMapSwitcherLinks,500);
